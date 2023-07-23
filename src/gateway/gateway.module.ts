@@ -1,7 +1,9 @@
 import { Module } from "@nestjs/common";
-import { MyGateway } from "./gateway";
+import { gatewayService } from "./gateway.service";
+import { FirestoreModule } from "src/firestore/firestore.module";
 
 @Module({
-    providers: [MyGateway]
+    imports: [FirestoreModule],
+    providers: [gatewayService],
 })
 export class GatewayModule { }
