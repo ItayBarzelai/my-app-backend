@@ -26,10 +26,10 @@ export class gatewayService implements OnModuleInit {
     @SubscribeMessage('create-game')
     handleCreateGame(client, payload) {
         const event = 'create-game';
-        const session = new Session(client.id, payload.name, this.server);
+        const session = new Session(this.server);
+        session.addUser(client, payload.name, true)
         this.sessions.set(session.getCode(), session)
         const response = { 'code': session.getCode() }
-        client.join(session.getCode().toString())
         client.emit(event, response)
     }
 
@@ -37,29 +37,9 @@ export class gatewayService implements OnModuleInit {
     handleJoinGame(client, payload) {
         const event = 'join-game';
         const session = this.sessions.get(payload.code);
-        session.addUser(client.id, payload.name)
-        const response = { 'users': session.getUsersNames() }
-        client.join(session.getCode().toString())
-        client.emit(event, response)
+        session.addUser(client, payload.name)
+        const response = { 'users': this.sessions.getUsers }
     }
 
-    @SubscribeMessage('start-game')
-    handlestartGame(client, payload) {
-        const event = 'start-game';
-        // const session = this.sessions.get(payload.code);
-        const session = this.sessions.get(111111);
-
-
-    }
-
-    @SubscribeMessage('send-guess')
-    handleSendGuess(client, payload) {
-        const event = 'send-guess';
-        // const session = this.sessions.get(payload.code);
-        const session = this.sessions.get(111111);
-        if (session.isWaitingForGuess()) {
-
-        }
-    }
 
 }
