@@ -1,48 +1,38 @@
-class User {
-    private socket;
-    private name;
-    private guess;
-    private score;
-    private host;
-    private sessionCode;
+import { Socket } from "socket.io";
+import Player from "./player";
 
-    constructor(socket, name, host = false) {
+class User {
+    private player: Player;
+    private socket: Socket;
+
+    constructor(socket: Socket) {
         this.socket = socket;
-        this.name = name;
-        this.host = host;
     }
 
-    getSocket = () => {
+    getPlayer = (): Player => {
+        return this.player;
+    }
+    getSocket = (): Socket => {
         return this.socket;
     }
-    getName = () => {
-        return this.name;
+
+    setPlayer = (player: Player) => {
+        this.player = player;
     }
-    getGuess = () => {
-        return this.guess;
-    }
-    getScore = () => {
-        return this.score;
-    }
-    getHost = () => {
-        return this.host;
-    }
-    getSessionCode = () => {
-        return this.sessionCode;
+    setSocket = (socket: Socket) => {
+        this.socket = socket;
     }
 
-    setGuess = (guess) => {
-        this.guess = guess;
-    }
-    setScore = (score) => {
-        this.score = score;
-    }
-    setSessionCode = (sessionCode) => {
-        this.sessionCode = sessionCode;
+    getSocketId = (): string => {
+        return this.socket.id;
     }
 
-    joinRoom = (roomCode) => {
-        this.socket.join(roomCode);
+    emit = (event: string, payload: any): void => {
+        this.socket.emit(event, payload);
+    }
+
+    joinRoom = (roomId: string): void => {
+        this.socket.join(roomId);
     }
 }
 

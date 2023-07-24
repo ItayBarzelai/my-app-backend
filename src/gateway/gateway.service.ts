@@ -21,51 +21,40 @@ export class gatewayService implements OnModuleInit {
     server: Server;
 
     onModuleInit() {
-        // this.sessions.set(1, new Session(this.server)) // delete me
         this.server.on('connection', (socket) => {
-            console.log("connected: " + socket.id)
+            console.log("connected: " + socket.id);
+            this.users.set(socket.id, new User(socket));
         })
 
         this.server.on('disconnect', (socket) => {
             this.users.delete(socket.id);
-        }) // add delete session
+        }) // add delete players and sessions if needed
     }
 
     @SubscribeMessage('create-game')
     handleCreateGame(client, payload) {
-        const event = 'create-game';
-        const user = new User(client, payload.name, true);
-        this.users.set(client.id, user);
+        const user = this.users.get(client.id);
+        this.users.set(user.getSocketId(), user);
         const session = new Session(this.server);
-        session.addUser(user
-
-
-
-
-        );
-        this.sessions.set(session.getCode().toString(), session);
-        const response = { 'code': session.getCode() };
-        client.emit(event, response);
+        this.sessions.set(session.getSessionCode(), session);
+        session.createPlayer(payload.nickname, user, true);
+        user.emit('create-game', {
+            code: session.getSessionCode()
+        });
     }
 
     @SubscribeMessage('join-game') // create error when room not found
     handleJoinGame(client, payload) {
-        const event = 'join-game';
-        const session = this.sessions.get(payload.code.toString());
-        this.users.set(client.id, client)
-        session.addUser(client, payload.name)
-        const response = { 'code': session.getCode() }
-        client.emit(event, response)
+        const user = this.users.get(client.id);
+        const session = this.sessions.get(parseInt(payload.code));
+        session.createPlayer(payload.nickname, user);
+        user.emit('join-game', session.getPlayersNicknames());
     }
 
     @SubscribeMessage('send-guess')
     handleNewGuess(client, payload) {
-        const event = 'send-guess';
-        const user = this.users.get(client.id)
-        const session = this.sessions.get(payload.code.toString());
-        session.setGuess(client.id, payload.guess)
-        session.startRundown();
+        const user = this.users.get(client.id);
+        user.getPlayer().updateGuess(payload.guess);
     }
-
 
 }

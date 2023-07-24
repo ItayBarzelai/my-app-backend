@@ -9,52 +9,76 @@ class Player {
     private score: number;
     private user: User;
 
-    constructor(nickname: string, host = false, session, Session, user: User) {
+    constructor(nickname: string, user: User, host: boolean) {
         this.nickname = nickname;
         this.host = host;
-        this.session = session;
         this.user = user;
+
+        this.user.joinRoom(this.session.getRoomId());
     }
 
-    getNickname = () => {
+    getNickname = (): string => {
         return this.nickname;
     }
-    getHost = () => {
+    getHost = (): boolean => {
         return this.host;
     }
-    getGuess = () => {
+    getGuess = (): number => {
         return this.guess;
     }
-    getSession = () => {
+    getSession = (): Session => {
         return this.session;
     }
-    getScore = () => {
+    getScore = (): number => {
         return this.score;
     }
-    getUser = () => {
+    getUser = (): User => {
         return this.user;
     }
 
-    setNickname = (nickname) => {
+    setNickname = (nickname: string) => {
         this.nickname = nickname;
     }
-    setHost = (host) => {
+    setHost = (host: boolean) => {
         this.host = host;
     }
-    setGuess = (guess) => {
+    setGuess = (guess: number) => {
         this.guess = guess;
     }
-    setSession = (session) => {
+    setSession = (session: Session) => {
         this.session = session;
     }
-    setScore = (score) => {
+    setScore = (score: number) => {
         this.score = score;
     }
-    setUser = (user) => {
+    setUser = (user: User) => {
         this.user = user;
     }
 
-    addToScore = () => {
+    resetGuess = (): void => {
+        this.guess = null;
+    }
+
+    updateGuess = (guess: number): void => {
+        if (this.guess === null) {
+            this.guess = guess;
+        }
+        this.session.startRundown();
+    }
+
+    resetPlayer = (): void => {
+        this.resetGuess();
+        this.score = 0;
+    }
+
+    evaluateGuessError = (answer: number): number => {
+        if (this.guess === null) {
+            this.guess = 0;
+        }
+        return Math.abs(answer - this.guess);
+    }
+
+    addToScore = (): void => {
         this.score++;
     }
 
