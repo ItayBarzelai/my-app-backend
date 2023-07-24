@@ -62,42 +62,66 @@ class Session {
         return this.users;
     }
     getQuestion = () => {
-        return this.questions[this.questionsIndex];
+        return this.questions[this.questionsIndex].question;
     }
     getGameState = () => {
         return this.gameState;
+    }
+
+    // setGuess = (clientId, guess) => {
+    //     this.users.get(clientId).guess = guess;
+    //     this.emitToRoom('add-user', this.convertMapToJason(this.getUsers()))
+    // }
+
+    emitToRoom = (message, data) => {
+        this.server.to(this.getCode().toString()).emit(message, data)
     }
 
     convertMapToJason = (map) => {
         return JSON.stringify(Object.fromEntries(map));
     }
 
-    addUser = (client, name, host = false) => {
-        let user = { 'name': name, 'score': 0, host: host, guess: 0 }
-        this.users.set(client.id, user)
+    removeUser = (client) => {
+        this.users.delete(client.id)
+        sasa// if 
+    }
 
-        client.join(this.getCode().toString())
+    getNames = () => {
+        let names = [];
+        this.users.forEach((user) => {
+            names.push(user.getName())
+        })
+        return names;
+    }
 
-        this.server.on(this.getCode().toString()).emit('add-user', {
-            users: this.convertMapToJason(this.users)
-        });
+    addUser = (user) => {
+        this.users.set(user.id, user)
+        user.joinRoom(this.getCode().toString())
 
+        if (this.users.length == 2) {
+            setTimeout(() => {
+                this.emitToRoom('add-user', this.getNames())
+                this.startGame()
+            }, 1000)
+        }
     }
 
     startGame = () => {
-        this.server.on(this.getCode().toString()).emit('start-game', {}) // check if {} are necessary
+        this.emitToRoom('start-game', {}); // check if {} are necessary
+        this.newQuestion();
     }
 
     newQuestion = () => {
+        console.log('newquesion')
         this.gameState = gameState.GUESSING
-        this.server.on(this.getCode().toString()).emit('new-question', {
+        this.emitToRoom('new-question', {
             question: this.getQuestion(),
         })
     }
 
     startRundown = () => {
         this.gameState = gameState.RUNDOWN
-        this.server.on(this.getCode().toString()).emit('start-rundown', {
+        this.emitToRoom('start-rundown', {
             length: this.RUNDOWN_LENGTH,
         })
         setTimeout(() => {
@@ -106,11 +130,13 @@ class Session {
     }
 
     endRundown = () => {
-        this.server.on(this.getCode().toString()).emit('end-rundown', {})
+        this.emitToRoom('end-rundown', {})
+        setTimeout(this.gradingRound, 1000)
+        // this.gradingRound();
     }
 
     gradingRound = () => {
-        let maxError = 0; /// max velue not min!!!!
+        let maxError = 999999999; // fix this find max
         this.users.forEach((user) => {
             if (Math.abs(user.guess) <= maxError) {
                 maxError = Math.abs(user.guess);
@@ -127,7 +153,7 @@ class Session {
         })
 
         this.questionsIndex++;
-        this.server.on(this.getCode().toString()).emit('grading-round', {
+        this.emitToRoom('grading-round', {
             users: this.convertMapToJason(this.users)
         });
 
@@ -148,7 +174,7 @@ class Session {
             }
         })
 
-        this.server.on(this.getCode().toString()).emit('end-game', {
+        this.emitToRoom('end-game', {
             'winners': winners
         })
     }
