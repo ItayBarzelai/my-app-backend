@@ -1,5 +1,5 @@
 import { OnModuleInit } from "@nestjs/common";
-import { WebSocketServer, MessageBody, SubscribeMessage, WebSocketGateway, WsResponse } from "@nestjs/websockets";
+import { WebSocketServer, MessageBody, SubscribeMessage, WebSocketGateway, WsResponse, OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect } from "@nestjs/websockets";
 import { Server, Socket } from 'socket.io';
 import { firestoreSerivce } from "src/firestore/firestore.service";
 import Session from "./session";
@@ -7,7 +7,7 @@ import User from './user';
 import { Observable } from "rxjs";
 
 @WebSocketGateway({ cors: true })
-export class gatewayService implements OnModuleInit {
+export class gatewayService implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
 
     private sessions;
     private users;
@@ -20,16 +20,26 @@ export class gatewayService implements OnModuleInit {
     @WebSocketServer()
     server: Server;
 
-    onModuleInit() {
-        this.server.on('connection', (socket) => {
-            console.log("connected: " + socket.id);
-            this.users.set(socket.id, new User(socket));
-        })
-
-        this.server.on('disconnect', (socket) => {
-            this.users.delete(socket.id);
-        }) // add delete players and sessions if needed
+    afterInit(server: Server) {
+        console.log("init scoket-io");
     }
+
+    handleConnection(client: Socket) {
+        console.log("connected: " + client.id);
+        this.users.set(client.id, new User(client));
+    }
+
+    handleDisconnect(client: Socket) {
+        console.log("disconnected: " + client.id);
+        const user = this.users.get(client.id);
+        try {
+            user.getPlayer().getSession().deletePlayer(user.id)
+            if (user.getPlayer().getSession().getPlayers().length === 0) {
+                this.sessions.delete(user.getPlayer().getSession().getSessionCode());
+            }
+        } catch { }
+        this.users.delete(user.id);
+    } // add delete players and sessions if needed
 
     @SubscribeMessage('create-game')
     handleCreateGame(client, payload) {
@@ -48,7 +58,7 @@ export class gatewayService implements OnModuleInit {
         const user = this.users.get(client.id);
         const session = this.sessions.get(parseInt(payload.code));
         session.createPlayer(payload.nickname, user);
-        user.emit('join-game', session.getPlayersNicknames());
+        user.emit('join-game', { nicknames: session.getPlayersNicknames(), code: session.getSessionCode() });
     }
 
     @SubscribeMessage('send-guess')

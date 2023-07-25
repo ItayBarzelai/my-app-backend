@@ -9,11 +9,14 @@ class Player {
     private score: number;
     private user: User;
 
-    constructor(nickname: string, user: User, host: boolean) {
+    constructor(nickname: string, user: User, host: boolean, session: Session) {
+        console.log(`nickename: ${nickname}`)
         this.nickname = nickname;
         this.host = host;
         this.user = user;
+        this.session = session;
 
+        this.user.setPlayer(this)
         this.user.joinRoom(this.session.getRoomId());
     }
 
@@ -33,6 +36,7 @@ class Player {
         return this.score;
     }
     getUser = (): User => {
+        console.log("get user" + this.user.getSocketId())
         return this.user;
     }
 
@@ -63,7 +67,9 @@ class Player {
         if (this.guess === null) {
             this.guess = guess;
         }
+        console.log('updateguess')
         this.session.startRundown();
+        this.session.emitToRoomNicknamesOfPlayersThatGuessed();
     }
 
     resetPlayer = (): void => {

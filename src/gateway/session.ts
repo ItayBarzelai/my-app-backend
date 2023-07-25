@@ -2,6 +2,9 @@ import { Server } from "socket.io";
 import gameState from "./game-state";
 import Player from "./player";
 import User from "./user";
+import { Logger } from "@nestjs/common";
+
+const logger = new Logger();
 
 const PLAY_TILL = 5;
 const RUNDOWN_LENGTH = 5000;
@@ -64,10 +67,13 @@ class Session {
     }
 
     createPlayer = (nickname: string, user: User, host: boolean = false): void => {
-        let player = new Player(nickname, user, host);
-        player.setSession(this);
+        let player = new Player(nickname, user, host, this);
         this.players.set(user.getSocketId(), player);
         this.emitToRoomPlayersNicknames();
+
+        if (this.players.size === 2) {
+            setTimeout(this.startGame, 2000)
+        }
     }
 
     deletePlayer = (user: User): void => {
@@ -77,9 +83,11 @@ class Session {
 
     emitToRoom = (event: string, payload: any): void => {
         this.server.to(this.getRoomId()).emit(event, payload);
+        logger.log('logged to room + ' + event)
     }
 
     emitToRoomPlayersNicknames = (): void => {
+        console.log(this.getPlayersNicknames())
         this.emitToRoom('players-nicknames', this.getPlayersNicknames())
     }
 
@@ -90,7 +98,7 @@ class Session {
                 nicknames.push(player.getNickname());
             }
         })
-        this.emitToRoom('players-guessed', nicknames)
+        this.emitToRoom('players-guessed', { nicknames: nicknames })
     }
 
     resetPlayersGuesses = (): void => {
@@ -137,44 +145,17 @@ class Session {
         this.emitToRoom('start-game', {});
         this.players.forEach((player) => player.resetPlayer());
         this.questions = [
-            {
-                question: 'how many seconds there are in an hour?',
-                answer: 3600
-            },
-            {
-                question: '2',
-                answer: 2
-            },
-            {
-                question: '3',
-                answer: 3
-            },
-            {
-                question: '4',
-                answer: 4
-            },
-            {
-                question: '5',
-                answer: 5
-            },
-            {
-                question: '6',
-                answer: 6
-            },
-            {
-                question: '7',
-                answer: 7
-            },
-            {
-                question: '8',
-                answer: 8
-            },
-            {
-                question: '9',
-                answer: 9
-            },
+            { question: "How many continents are there on Earth?", answer: 7 },
+            { question: "What is the square root of 144?", answer: 12 },
+            { question: "In the Roman numeral system, what number does 'C' represent ?", answer: 100 },
+            { question: "How many players are there on a standard soccer(football) team?", answer: 11 },
+            { question: "What is the atomic number of carbon?", answer: 6 },
+            { question: "How many sides does a heptagon have?", answer: 7 },
+            { question: "What is the sum of the first two prime numbers?", answer: 3 },
+            { question: "How many degrees are there in a right angle?", answer: 90 },
+            { question: "What is the sum of the interior angles of a triangle?", answer: 180 }
         ] // get questions from firebase
-        this.startRound();
+        setTimeout(this.startRound, 2000)
     }
 
     startRound = (): void => {
@@ -187,10 +168,11 @@ class Session {
 
     startRundown = (): void => {
         if (this.gameState === gameState.GUESSING) {
+            console.log('start-rundown');
+            this.gameState = gameState.RUNDOWN;
             this.emitToRoom('start-rundown', {
                 length: RUNDOWN_LENGTH
             });
-            this.emitToRoomNicknamesOfPlayersThatGuessed();
             setTimeout(this.endRundown, RUNDOWN_LENGTH + 2000); // delete it
         }
     }
@@ -212,9 +194,10 @@ class Session {
     }
 
     endRundown = (): void => {
+        this.gameState = gameState.GUESSING;
         this.evaluateGuessesAndChangeScores()
         if (this.getPlayersNicknamesThatWon().length === 0) {
-            this.emitToRoom('end-rundown', this.getPlayersGuessesAndScores());
+            this.emitToRoom('end-rundown', { scores: this.getPlayersGuessesAndScores(), answer: this.getAnswer() });
             this.questionsIndex++;
             this.startRound();
         }
