@@ -74,6 +74,12 @@ export class gatewayService implements OnGatewayInit, OnGatewayConnection, OnGat
         user.getPlayer().getSession().startGame();
     }
 
+    @SubscribeMessage('screen-mounted')
+    handleScreenMounted(client, payload) {
+        const user = this.users.get(client.id);
+        user.getPlayer().updateIsScreenMounted();
+    }
+
     @SubscribeMessage('send-guess')
     handleNewGuess(client, payload) {
         const user = this.users.get(client.id);

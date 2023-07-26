@@ -16,7 +16,6 @@ class Session {
     private questions; // make it queue + class
     private server: Server;
     private questionsIndex = 0;
-    // private endGameFlag = false;
     private gameState;
     static get PLAY_TILL() {
         return PLAY_TILL;
@@ -105,13 +104,7 @@ class Session {
     }
 
     emitToRoomNicknamesOfPlayersThatGuessed = (): void => {
-        let nicknames = [];
-        this.players.forEach((player) => {
-            if (player.getGuess() != null) {
-                nicknames.push(player.getNickname());
-            }
-        })
-        this.emitToRoom('players-guessed', { nicknames: nicknames })
+        this.emitToRoom('players-guessed', { nicknames: this.getNicknamesOfPlayersThatGuessed() })
     }
 
     resetPlayersGuesses = (): void => {
@@ -124,6 +117,16 @@ class Session {
 
     getAnswer = (): number => {
         return this.questions[this.questionsIndex].answer;
+    }
+
+    checkForAllScreensMounted = () => {
+        let areAllScreensMounted = true;
+        this.players.forEach((player) => {
+            if (!player.getIsScreenMounted) areAllScreensMounted = false;
+        })
+        if (areAllScreensMounted) {
+            this.startRound();
+        };
     }
 
     getPlayersReadyStatuses = () => {
@@ -159,6 +162,16 @@ class Session {
         return playersNicknamesThatWon;
     }
 
+    getNicknamesOfPlayersThatGuessed = () => {
+        let nicknames = [];
+        this.players.forEach((player) => {
+            if (player.getGuess() != null) {
+                nicknames.push(player.getNickname());
+            }
+        })
+        return nicknames;
+    }
+
     startGame = (): void => {
         this.emitToRoom('start-game', {});
         this.players.forEach((player) => player.resetPlayer());
@@ -173,7 +186,8 @@ class Session {
             { question: "How many degrees are there in a right angle?", answer: 90 },
             { question: "What is the sum of the interior angles of a triangle?", answer: 180 }
         ] // get questions from firebase
-        setTimeout(this.startRound, 2000)
+        // this.startRound();
+        // setTimeout(this.startRound, 1000)
     }
 
     startRound = (): void => {
@@ -185,7 +199,7 @@ class Session {
     }
 
     startRundown = (): void => {
-        if (this.gameState === gameState.GUESSING) {
+        if (this.gameState === gameState.GUESSING && this.getNicknamesOfPlayersThatGuessed().length === 1) {
             console.log('start-rundown');
             this.gameState = gameState.RUNDOWN;
             this.emitToRoom('start-rundown', {

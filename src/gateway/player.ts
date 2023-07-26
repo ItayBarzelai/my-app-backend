@@ -9,6 +9,7 @@ class Player {
     private score: number;
     private user: User;
     private isReady: boolean;
+    private isScreenMounted: boolean;
 
     constructor(nickname: string, user: User, host: boolean, session: Session) {
         console.log(`nickename: ${nickname}`)
@@ -17,6 +18,7 @@ class Player {
         this.user = user;
         this.session = session;
         this.isReady = false;
+        this.isScreenMounted = false;
 
         this.user.setPlayer(this)
         this.user.joinRoom(this.session.getRoomId());
@@ -47,6 +49,9 @@ class Player {
         else
             return this.isReady;
     }
+    getIsScreenMounted = () => {
+        return this.isScreenMounted;
+    }
 
     setNickname = (nickname: string) => {
         this.nickname = nickname;
@@ -68,6 +73,9 @@ class Player {
     }
     setIsReady = (isReady: boolean) => {
         this.isReady = isReady;
+    }
+    setIsScreenMounted = (isScreenMounted: boolean) => {
+        this.isScreenMounted = isScreenMounted;
     }
 
     resetGuess = (): void => {
@@ -97,6 +105,11 @@ class Player {
 
     addToScore = (): void => {
         this.score++;
+    }
+
+    updateIsScreenMounted = () => {
+        this.isScreenMounted = true;
+        this.session.checkForAllScreensMounted();
     }
 
 }
