@@ -8,6 +8,7 @@ const logger = new Logger();
 
 const PLAY_TILL = 5;
 const RUNDOWN_LENGTH = 5000;
+const PAUSE_BEFORE_NEW_ROUND = 6000;
 
 class Session {
     private sessionCode: number;
@@ -190,7 +191,7 @@ class Session {
             this.emitToRoom('start-rundown', {
                 length: RUNDOWN_LENGTH
             });
-            setTimeout(this.endRundown, RUNDOWN_LENGTH + 2000); // delete it
+            setTimeout(this.endRundown, RUNDOWN_LENGTH);
         }
     }
 
@@ -216,7 +217,7 @@ class Session {
         if (this.getPlayersNicknamesThatWon().length === 0) {
             this.emitToRoom('end-rundown', { scores: this.getPlayersGuessesAndScores(), answer: this.getAnswer() });
             this.questionsIndex++;
-            this.startRound();
+            setTimeout(this.startRound, PAUSE_BEFORE_NEW_ROUND)
         }
         else {
             this.endGame();
