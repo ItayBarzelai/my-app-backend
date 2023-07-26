@@ -92,6 +92,10 @@ class Session {
         this.players.forEach((player) => {
             if (!player.getIsReady()) isEveryoneReady = false;
         })
+        // you can't start with one player
+        if (this.players.size < 2)
+            isEveryoneReady = false;
+
         console.log(playersReadyStatuses, isEveryoneReady);
         this.emitToRoom('players-ready-statuses', {
             playersReadyStatuses: playersReadyStatuses,

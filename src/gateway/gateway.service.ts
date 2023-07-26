@@ -32,12 +32,12 @@ export class gatewayService implements OnGatewayInit, OnGatewayConnection, OnGat
     handleDisconnect(client: Socket) {
         console.log("disconnected: " + client.id);
         const user = this.users.get(client.id);
+        user.getPlayer().getSession().deletePlayer(user);
         try {
-            user.getPlayer().getSession().deletePlayer(user.id)
             if (user.getPlayer().getSession().getPlayers().length === 0) {
                 this.sessions.delete(user.getPlayer().getSession().getSessionCode());
             }
-        } catch { }
+        } catch (error) { console.log("here is the problem" + error); }
         this.users.delete(user.id);
     } // add delete players and sessions if needed
 
