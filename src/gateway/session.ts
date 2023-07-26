@@ -69,16 +69,16 @@ class Session {
     createPlayer = (nickname: string, user: User, host: boolean = false): void => {
         let player = new Player(nickname, user, host, this);
         this.players.set(user.getSocketId(), player);
-        this.emitToRoomPlayersNicknames();
+        this.emitToRoomPlayersReadyStatuses();
 
-        if (this.players.size === 2) {
-            setTimeout(this.startGame, 2000)
-        }
+        // if (this.players.size === 2) {
+        //     setTimeout(this.startGame, 2000)
+        // }
     }
 
     deletePlayer = (user: User): void => {
         this.players.delete(user.getSocketId())
-        this.emitToRoomPlayersNicknames();
+        this.emitToRoomPlayersReadyStatuses();
     }
 
     emitToRoom = (event: string, payload: any): void => {
@@ -86,9 +86,17 @@ class Session {
         logger.log('logged to room + ' + event)
     }
 
-    emitToRoomPlayersNicknames = (): void => {
-        console.log(this.getPlayersNicknames())
-        this.emitToRoom('players-nicknames', this.getPlayersNicknames())
+    emitToRoomPlayersReadyStatuses = (): void => {
+        let playersReadyStatuses = this.getPlayersReadyStatuses();
+        let isEveryoneReady = true;
+        this.players.forEach((player) => {
+            if (!player.getIsReady()) isEveryoneReady = false;
+        })
+        console.log(playersReadyStatuses, isEveryoneReady);
+        this.emitToRoom('players-ready-statuses', {
+            playersReadyStatuses: playersReadyStatuses,
+            isEveryoneReady: isEveryoneReady,
+        });
     }
 
     emitToRoomNicknamesOfPlayersThatGuessed = (): void => {
@@ -113,10 +121,15 @@ class Session {
         return this.questions[this.questionsIndex].answer;
     }
 
-    getPlayersNicknames = (): string[] => {
-        let nicknames = [];
-        this.players.forEach((player) => nicknames.push(player.getNickname()))
-        return nicknames;
+    getPlayersReadyStatuses = () => {
+        let playersReadyStatuses: { nickname: string, isReady: boolean }[] = [];
+        this.players.forEach((player) => {
+            playersReadyStatuses.push({
+                nickname: player.getNickname(),
+                isReady: player.getIsReady(),
+            })
+        })
+        return playersReadyStatuses;
     }
 
     getPlayersGuessesAndScores = (): { nickname: string, guess: number, score: number }[] => {

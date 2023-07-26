@@ -8,6 +8,7 @@ class Player {
     private session: Session;
     private score: number;
     private user: User;
+    private isReady: boolean;
 
     constructor(nickname: string, user: User, host: boolean, session: Session) {
         console.log(`nickename: ${nickname}`)
@@ -15,6 +16,7 @@ class Player {
         this.host = host;
         this.user = user;
         this.session = session;
+        this.isReady = false;
 
         this.user.setPlayer(this)
         this.user.joinRoom(this.session.getRoomId());
@@ -39,6 +41,12 @@ class Player {
         console.log("get user" + this.user.getSocketId())
         return this.user;
     }
+    getIsReady = () => {
+        if (this.host)
+            return true;
+        else
+            return this.isReady;
+    }
 
     setNickname = (nickname: string) => {
         this.nickname = nickname;
@@ -57,6 +65,9 @@ class Player {
     }
     setUser = (user: User) => {
         this.user = user;
+    }
+    setIsReady = (isReady: boolean) => {
+        this.isReady = isReady;
     }
 
     resetGuess = (): void => {

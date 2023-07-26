@@ -58,7 +58,20 @@ export class gatewayService implements OnGatewayInit, OnGatewayConnection, OnGat
         const user = this.users.get(client.id);
         const session = this.sessions.get(parseInt(payload.code));
         session.createPlayer(payload.nickname, user);
-        user.emit('join-game', { nicknames: session.getPlayersNicknames(), code: session.getSessionCode() });
+        user.emit('join-game', { code: session.getSessionCode() });
+    }
+
+    @SubscribeMessage('im-ready')
+    handleImReady(client, payload) {
+        const user = this.users.get(client.id);
+        user.getPlayer().setIsReady(true);
+        user.getPlayer().getSession().emitToRoomPlayersReadyStatuses();
+    }
+
+    @SubscribeMessage('start-game')
+    handleStartGame(client, payload) {
+        const user = this.users.get(client.id);
+        user.getPlayer().getSession().startGame();
     }
 
     @SubscribeMessage('send-guess')
