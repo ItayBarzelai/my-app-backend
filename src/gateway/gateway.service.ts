@@ -4,7 +4,6 @@ import { Server, Socket } from 'socket.io';
 import { firestoreSerivce } from "src/firestore/firestore.service";
 import Session from "./session";
 import User from './user';
-import { Observable } from "rxjs";
 
 @WebSocketGateway({ cors: true })
 export class gatewayService implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
@@ -32,12 +31,15 @@ export class gatewayService implements OnGatewayInit, OnGatewayConnection, OnGat
     handleDisconnect(client: Socket) {
         console.log("disconnected: " + client.id);
         const user = this.users.get(client.id);
-        user.getPlayer().getSession().deletePlayer(user);
         try {
-            if (user.getPlayer().getSession().getPlayers().length === 0) {
-                this.sessions.delete(user.getPlayer().getSession().getSessionCode());
+            const session = user.getPlayer().getSession();
+            session.deletePlayer(user);
+            if (session.getPlayers().length === 0) {
+                this.sessions.delete(session.getSessionCode());
             }
-        } catch (error) { console.log("here is the problem" + error); }
+        } catch (error) {
+            console.log("here is the problem" + error);
+        }
         this.users.delete(user.id);
     } // add delete players and sessions if needed
 
@@ -57,8 +59,12 @@ export class gatewayService implements OnGatewayInit, OnGatewayConnection, OnGat
     handleJoinGame(client, payload) {
         const user = this.users.get(client.id);
         const session = this.sessions.get(parseInt(payload.code));
-        session.createPlayer(payload.nickname, user);
-        user.emit('join-game', { code: session.getSessionCode() });
+        if (session.createPlayer(payload.nickname, user)) {
+            user.emit('join-game', { code: session.getSessionCode(), error: "" });
+        }
+        else {
+            user.emit('join-game', { error: 'already two players in the room' });
+        }
     }
 
     @SubscribeMessage('im-ready')
