@@ -66,14 +66,16 @@ class Session {
         return this.sessionCode.toString();
     }
 
-    createPlayer = (nickname: string, user: User, host: boolean = false): void => {
-        let player = new Player(nickname, user, host, this);
-        this.players.set(user.getSocketId(), player);
-        this.emitToRoomPlayersReadyStatuses();
-
-        // if (this.players.size === 2) {
-        //     setTimeout(this.startGame, 2000)
-        // }
+    createPlayer = (nickname: string, user: User, host: boolean = false) => {
+        if (this.players.size > 1) {
+            return false;
+        }
+        else {
+            let player = new Player(nickname, user, host, this);
+            this.players.set(user.getSocketId(), player);
+            this.emitToRoomPlayersReadyStatuses();
+            return true;
+        }
     }
 
     deletePlayer = (user: User): void => {
@@ -126,6 +128,7 @@ class Session {
         })
         if (areAllScreensMounted) {
             this.startRound();
+            this.emitToRoom('init-game', { scores: this.getPlayersGuessesAndScores() });
         };
     }
 
