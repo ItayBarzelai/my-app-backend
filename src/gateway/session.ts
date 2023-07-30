@@ -24,8 +24,8 @@ class Session {
         return RUNDOWN_LENGTH;
     }
 
-    constructor(server: Server) {
-        this.sessionCode = 111111 // get code from firebase
+    constructor(sessionCode: number, server: Server) {
+        this.sessionCode = sessionCode;
         this.server = server;
         this.gameState = gameState.LOBBY;
     }

@@ -4,14 +4,19 @@ import { Server, Socket } from 'socket.io';
 import { firestoreSerivce } from "src/firestore/firestore.service";
 import Session from "./session";
 import User from './user';
+import { PassThrough } from "stream";
 
 @WebSocketGateway({ cors: true })
 export class gatewayService implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
 
     private sessions;
+    private emptySessions;
     private users;
 
     constructor(private readonly firestoreSerivce: firestoreSerivce) {
+        this.emptySessions = [];
+        for (let i = 0; i < 1000000; i++)
+            this.emptySessions.push(i);
         this.sessions = new Map();
         this.users = new Map();
     }
@@ -35,7 +40,9 @@ export class gatewayService implements OnGatewayInit, OnGatewayConnection, OnGat
             const session = user.getPlayer().getSession();
             session.deletePlayer(user);
             if (session.getPlayers().length === 0) {
-                this.sessions.delete(session.getSessionCode());
+                let sessionCode = session.getSessionCode();
+                this.sessions.delete(sessionCode);
+                this.returnSessionCode(sessionCode);
             }
         } catch (error) {
             console.log("here is the problem" + error);
@@ -43,11 +50,21 @@ export class gatewayService implements OnGatewayInit, OnGatewayConnection, OnGat
         this.users.delete(user.id);
     } // add delete players and sessions if needed
 
+    getNewSessionCode() {
+        let newSessionCode = this.emptySessions[~~(Math.random() * this.emptySessions.length)];
+        this.emptySessions = this.emptySessions.filter(e => e !== newSessionCode);
+        return newSessionCode;
+    }
+
+    returnSessionCode(oldSessionCode: number) {
+        this.emptySessions.push(oldSessionCode)
+    }
+
     @SubscribeMessage('create-game')
     handleCreateGame(client, payload) {
         const user = this.users.get(client.id);
         this.users.set(user.getSocketId(), user);
-        const session = new Session(this.server);
+        const session = new Session(this.getNewSessionCode(), this.server);
         this.sessions.set(session.getSessionCode(), session);
         session.createPlayer(payload.nickname, user, true);
         user.emit('create-game', {
