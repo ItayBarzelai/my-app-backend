@@ -1,4 +1,3 @@
-import { OnModuleInit } from "@nestjs/common";
 import { WebSocketServer, MessageBody, SubscribeMessage, WebSocketGateway, WsResponse, OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect } from "@nestjs/websockets";
 import { Server, Socket } from 'socket.io';
 import { firestoreSerivce } from "src/firestore/firestore.service";
@@ -41,7 +40,7 @@ export class gatewayService implements OnGatewayInit, OnGatewayConnection, OnGat
             console.log("here is the problem" + error);
         }
         this.users.delete(user.id);
-    } // add delete players and sessions if needed
+    }
 
     @SubscribeMessage('create-game')
     handleCreateGame(client, payload) {
@@ -59,7 +58,10 @@ export class gatewayService implements OnGatewayInit, OnGatewayConnection, OnGat
     handleJoinGame(client, payload) {
         const user = this.users.get(client.id);
         const session = this.sessions.get(parseInt(payload.code));
-        if (session.createPlayer(payload.nickname, user)) {
+        if (session === undefined) {
+            user.emit('join-game', { error: "room not found" });
+        }
+        else if (session.createPlayer(payload.nickname, user)) {
             user.emit('join-game', { code: session.getSessionCode(), error: "" });
         }
         else {
